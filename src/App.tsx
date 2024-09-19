@@ -3,7 +3,6 @@ import {
   Alert,
   Anchor,
   AppShell,
-  Burger,
   Button,
   Group,
   Loader,
@@ -207,6 +206,7 @@ function App() {
               }))}
               value={accountId}
               onChange={(value) => value && setAccountId(value)}
+              withCheckIcon={false}
               rightSection={
                 isLoadingAccounts ? (
                   <Loader size={12} />
@@ -224,6 +224,7 @@ function App() {
               }))}
               value={databaseId}
               onChange={(value) => value && setDatabaseId(value)}
+              withCheckIcon={false}
               rightSection={
                 isLoadingAccounts || isLoadingDatabases ? (
                   <Loader size={12} />
@@ -246,6 +247,7 @@ function App() {
           <Group>
             <Select
               placeholder="Limit"
+              title="Limit"
               size="xs"
               w={60}
               data={[
@@ -259,17 +261,23 @@ function App() {
               value={limit.toString()}
               onChange={(value) => value && setLimit(parseInt(value))}
             />
+
             <NumberInput
               placeholder="Page"
+              title="Page"
               size="xs"
-              w={60}
+              w={50}
               min={1}
               value={page}
               onChange={(value) => value && setPage(Number(value))}
             />
 
             <ActionIcon variant="subtle" onClick={() => refetchRows()}>
-              <IconRefresh size={16} />
+              {isRefetchingRows ? (
+                <Loader size={12} />
+              ) : (
+                <IconRefresh size={16} />
+              )}
             </ActionIcon>
           </Group>
         </Group>
@@ -301,8 +309,7 @@ function App() {
         {isLoadingAccounts ||
         isLoadingDatabases ||
         isLoadingTables ||
-        isLoadingRows ||
-        isRefetchingRows ? (
+        isLoadingRows ? (
           <Stack p={16}>
             <Skeleton height={16} />
             <Skeleton height={16} />
@@ -314,7 +321,6 @@ function App() {
         ) : (
           <Table.ScrollContainer minWidth="100%">
             <Table
-              stickyHeader
               striped
               highlightOnHover
               withRowBorders={false}
@@ -337,11 +343,9 @@ function App() {
             placeholder="Enter your API token"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            mb={8}
           />
           <div>
             <Button
-              className="mt-2"
               variant="subtle"
               size="xs"
               leftSection={<CloudflareIcon width={16} height={16} />}
@@ -357,13 +361,18 @@ function App() {
             </Button>
           </div>
 
-          <Alert color="blue" mt={8}>
+          <Alert
+            color="blue"
+            mt={8}
+            title="Note"
+            icon={<IconAlertCircle size={16} />}
+          >
             <Text size="xs" c="blue">
-              API token is needed to fetch data using Cloudflare API. We have to
-              use a proxy server to avoid CORS issues and your token will only
-              be stored in your browser's local storage (not on server, never)
-              for user experience. If you are still uncomfortable with that, you
-              can clone this project{" "}
+              An API token is required to fetch data via the Cloudflare API. We
+              use a proxy server to address CORS issues. For your convenience,
+              your token will be stored only in your browser's local
+              storage—never on our servers. If you're still uncomfortable with
+              that, you can clone the project{" "}
               <Anchor
                 href="https://github.com/zoubingwu/cloudflare-d1-viewer"
                 target="_blank"
@@ -372,7 +381,7 @@ function App() {
               >
                 here
               </Anchor>{" "}
-              and host it on your own Cloudflare Pages.
+              and host it on your own Cloudflare Pages instance.
             </Text>
           </Alert>
 
