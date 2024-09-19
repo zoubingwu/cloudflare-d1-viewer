@@ -21,6 +21,8 @@ import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
   IconAlertCircle,
   IconExternalLink,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
   IconRefresh,
   IconSettings,
 } from "@tabler/icons-react";
@@ -37,7 +39,7 @@ function generateCloudflareTokenLink(name: string): string {
 }
 
 function App() {
-  const [navbarOpened, { toggle: toggleNavbar }] = useDisclosure();
+  const [navbarOpened, { toggle: toggleNavbar }] = useDisclosure(true);
   const [token, setToken, removeToken] = useLocalStorage<string>({
     key: "cf-api-token",
     getInitialValueInEffect: false,
@@ -183,18 +185,19 @@ function App() {
       navbar={{
         width: 200,
         breakpoint: "sm",
-        collapsed: { mobile: !navbarOpened },
+        collapsed: { mobile: !navbarOpened, desktop: !navbarOpened },
       }}
     >
       <AppShell.Header py={8} px={16}>
         <Group justify="space-between">
           <Group>
-            <Burger
-              opened={navbarOpened}
-              onClick={toggleNavbar}
-              hiddenFrom="sm"
-              size="sm"
-            />
+            <ActionIcon variant="subtle" onClick={() => toggleNavbar()}>
+              {navbarOpened ? (
+                <IconLayoutSidebarLeftCollapse size={16} />
+              ) : (
+                <IconLayoutSidebarLeftExpand size={16} />
+              )}
+            </ActionIcon>
             <Select
               placeholder="Account"
               size="xs"
