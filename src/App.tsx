@@ -372,7 +372,8 @@ function App() {
               use a proxy server to address CORS issues. For your convenience,
               your token will be stored only in your browser's local
               storage—never on our servers. If you're still uncomfortable with
-              that, you can clone the project{" "}
+              that, this is an <b>open source</b> project and you can always
+              clone it{" "}
               <Anchor
                 href="https://github.com/zoubingwu/cloudflare-d1-viewer"
                 target="_blank"
@@ -381,7 +382,8 @@ function App() {
               >
                 here
               </Anchor>{" "}
-              and host it on your own Cloudflare Pages instance.
+              and run it locally or host it on your own Cloudflare Pages
+              instance.
             </Text>
           </Alert>
 
