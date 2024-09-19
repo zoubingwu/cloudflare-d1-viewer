@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -19,9 +19,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "types": [
-        "@cloudflare/workers-types/2023-07-01"
-    ]
+    "types": ["@cloudflare/workers-types/2023-07-01"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

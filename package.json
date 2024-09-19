@@ -5,27 +5,36 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "watch": "vite build --watch",
+    "dev:pages": "wrangler pages dev ./dist",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "postinstall": "lefthook install",
     "preview": "npm run build && wrangler pages dev ./dist",
     "deploy": "npm run build && wrangler pages deploy ./dist"
   },
   "dependencies": {
+    "@mantine/core": "7.12.2",
+    "@mantine/hooks": "7.12.2",
+    "@tabler/icons-react": "3.17.0",
+    "@tanstack/react-query": "5.56.2",
+    "drizzle-orm": "0.33.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "wretch": "2.10.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.2",
     "@cloudflare/workers-types": "4.20240909.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
-    "typescript": "^5.2.2",
-    "vite": "^5.2.0",
+    "lefthook": "1.7.15",
+    "postcss": "8.4.47",
+    "postcss-preset-mantine": "1.17.0",
+    "postcss-simple-vars": "7.0.1",
+    "tsx": "4.19.1",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.6",
     "wrangler": "3.78.5"
   }
 }
