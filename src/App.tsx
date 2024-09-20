@@ -147,7 +147,7 @@ function App() {
 
     return {
       head: columns ?? [],
-      body: rows,
+      body: rows ?? [],
       caption: rows && rows.length === 0 ? "No data" : undefined,
     };
   }, [selectResult]);
@@ -223,7 +223,12 @@ function App() {
                 label: db.name,
               }))}
               value={databaseId}
-              onChange={(value) => value && setDatabaseId(value)}
+              onChange={(value) => {
+                if (value) {
+                  setDatabaseId(value);
+                  setTable("");
+                }
+              }}
               withCheckIcon={false}
               rightSection={
                 isLoadingAccounts || isLoadingDatabases ? (
@@ -292,7 +297,7 @@ function App() {
             <Skeleton height={16} />
             <Skeleton height={16} />
           </Stack>
-        ) : (
+        ) : tables.length > 0 ? (
           tables.map((i) => (
             <NavLink
               key={i}
@@ -302,6 +307,10 @@ function App() {
               onClick={() => setTable(i)}
             />
           ))
+        ) : (
+          <Text c="dimmed" size="xs" p={8}>
+            No tables found
+          </Text>
         )}
       </AppShell.Navbar>
 
@@ -320,12 +329,18 @@ function App() {
           </Stack>
         ) : (
           <Table.ScrollContainer minWidth="100%">
-            <Table
-              striped
-              highlightOnHover
-              withRowBorders={false}
-              data={tableData}
-            />
+            {tableData.head.length > 0 && tableData.body.length > 0 ? (
+              <Table
+                striped
+                highlightOnHover
+                withRowBorders={false}
+                data={tableData}
+              />
+            ) : (
+              <Text c="dimmed" size="xs" p={8}>
+                No data found
+              </Text>
+            )}
           </Table.ScrollContainer>
         )}
       </AppShell.Main>
