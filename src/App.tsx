@@ -405,7 +405,7 @@ function App() {
                 onClick={handleOpenLocalSQLiteFile}
                 leftSection={<IconFile size={16} />}
                 loading={loadingLocalDb}
-                loaderProps={{ variant: "dots" }}
+                loaderProps={{ type: "dots" }}
               >
                 {localDbFile
                   ? `${localDbFile.name} (${prettyBytes(localDbFile.size, { space: false, maximumFractionDigits: 1 })})`
