@@ -162,7 +162,7 @@ function App() {
           setLocalTable(res.at(0)?.values.flat().at(0) as string);
         }
 
-        return Promise.resolve({
+        return {
           success: true,
           errors: [] as any[],
           messages: [] as any[],
@@ -175,15 +175,15 @@ function App() {
               success: true,
             },
           ],
-        });
+        };
       } catch (error) {
         console.error("Error fetching tables from local SQLite:", error);
-        return Promise.resolve({
+        return {
           success: false,
           errors: [error] as any[],
           messages: ["Error fetching tables from local SQLite"] as any[],
           result: [] as any[],
-        });
+        };
       }
     },
     enabled: shouldFetchRemoteTables || shouldFetchLocalTables,
@@ -241,7 +241,7 @@ function App() {
           `SELECT * FROM ${localTable} LIMIT ${limit} OFFSET ${(page - 1) * limit}`,
         );
 
-        return Promise.resolve({
+        return {
           success: true,
           errors: [] as any[],
           messages: [] as any[],
@@ -254,10 +254,10 @@ function App() {
               success: true,
             },
           ],
-        });
+        };
       } catch (error) {
         console.error("Error fetching data from local SQLite:", error);
-        return Promise.resolve({
+        return {
           success: false,
           errors: [error] as any[],
           messages: ["Error fetching data from local SQLite"] as any[],
@@ -270,7 +270,7 @@ function App() {
               success: false,
             },
           ],
-        });
+        };
       }
     },
     enabled: shouldFetchFetchRemoteData || shouldFetchFetchLocalData,
