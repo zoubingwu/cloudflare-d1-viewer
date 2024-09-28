@@ -397,28 +397,20 @@ function App() {
                 />
               </>
             )}
-            {dbType === "local" &&
-              (localDbFile ? (
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  onClick={handleOpenLocalSQLiteFile}
-                  leftSection={<IconFile size={16} />}
-                  loading={loadingLocalDb}
-                >
-                  {`${localDbFile.name} (${prettyBytes(localDbFile.size, { space: false, maximumFractionDigits: 1 })})`}
-                </Button>
-              ) : (
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  onClick={handleOpenLocalSQLiteFile}
-                  leftSection={<IconFile size={16} />}
-                  loading={loadingLocalDb}
-                >
-                  No file selected
-                </Button>
-              ))}
+            {dbType === "local" && (
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={handleOpenLocalSQLiteFile}
+                leftSection={<IconFile size={16} />}
+                loading={loadingLocalDb}
+                loaderProps={{ variant: "dots" }}
+              >
+                {localDbFile
+                  ? `${localDbFile.name} (${prettyBytes(localDbFile.size, { space: false, maximumFractionDigits: 1 })})`
+                  : "Open SQLite File"}
+              </Button>
+            )}
 
             <ActionIcon
               variant="subtle"
