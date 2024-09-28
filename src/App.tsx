@@ -11,6 +11,7 @@ import {
   NumberInput,
   PasswordInput,
   ScrollArea,
+  SegmentedControl,
   Select,
   Skeleton,
   Stack,
@@ -21,13 +22,17 @@ import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
   IconAlertCircle,
   IconExternalLink,
+  IconFile,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconRefresh,
   IconSettings,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
+import { useMemoizedFn } from "ahooks";
+import prettyBytes from "pretty-bytes";
 import { useEffect, useMemo, useState } from "react";
+import initSqlJs, { Database } from "sql.js";
 import wretch from "wretch";
 import { GetUserResponse, ListDatabaseResponse, RunSQLResponse } from "./cf";
 
@@ -56,8 +61,20 @@ function generateMockTableData(columnCount: number, rowCount: number) {
   return { head, body };
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function App() {
   const [navbarOpened, { toggle: toggleNavbar }] = useDisclosure(true);
+  const [dbType, setDbType] = useLocalStorage<"cloudflare" | "local">({
+    key: "db-type",
+    defaultValue: "cloudflare",
+    getInitialValueInEffect: false,
+  });
+  const [localDb, setLocalDb] = useState<Database | null>(null);
+  const [loadingLocalDb, setLoadingLocalDb] = useState(false);
+  const [localDbFile, setLocalDbFile] = useState<File | null>(null);
   const [token, setToken, removeToken] = useLocalStorage<string>({
     key: "cf-api-token",
     getInitialValueInEffect: false,
@@ -67,7 +84,8 @@ function App() {
   const [opened, setOpened] = useState(!token);
   const [accountId, setAccountId] = useState<string>("");
   const [databaseId, setDatabaseId] = useState<string>("");
-  const [table, setTable] = useState<string>("");
+  const [remoteTable, setRemoteTable] = useState<string>("");
+  const [localTable, setLocalTable] = useState<string>("");
   const [limit, setLimit] = useState<number>(50);
   const [page, setPage] = useState<number>(1);
 
@@ -77,15 +95,22 @@ function App() {
     error: errorAccounts,
   } = useQuery({
     queryKey: ["accounts", token],
-    queryFn: () =>
-      wretch("/api/client/v4/accounts")
+    queryFn: async () => {
+      const res = await wretch("/api/client/v4/accounts")
         .headers({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         })
         .get()
-        .json<GetUserResponse>(),
-    enabled: !!token,
+        .json<GetUserResponse>();
+
+      if (res.result.length && !accountId) {
+        setAccountId(res.result[0].id);
+      }
+
+      return res;
+    },
+    enabled: !!token && dbType === "cloudflare",
   });
 
   const {
@@ -94,37 +119,102 @@ function App() {
     error: errorDatabases,
   } = useQuery({
     queryKey: ["databases", accountId],
-    queryFn: () =>
-      wretch(`/api/client/v4/accounts/${accountId}/d1/database`)
+    queryFn: async () => {
+      const res = await wretch(
+        `/api/client/v4/accounts/${accountId}/d1/database`,
+      )
         .headers({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         })
         .get()
-        .json<ListDatabaseResponse>(),
-    enabled: !!accountId && !!token,
+        .json<ListDatabaseResponse>();
+
+      if (res?.result.length && !databaseId) {
+        const defaultDb = res.result.at(0);
+        if (defaultDb) {
+          setDatabaseId(defaultDb.uuid);
+        }
+      }
+
+      return res;
+    },
+    enabled: !!accountId && !!token && dbType === "cloudflare",
   });
+
+  const shouldFetchRemoteD1 =
+    !!accountId && !!databaseId && !!token && dbType === "cloudflare";
+  const shouldFetchLocalSqlite = !!localDb && dbType === "local";
 
   const {
     data: tablesData,
     isLoading: isLoadingTables,
     error: errorTables,
   } = useQuery({
-    queryKey: ["tables", databaseId],
-    queryFn: () =>
-      wretch(
-        `/api/client/v4/accounts/${accountId}/d1/database/${databaseId}/raw`,
-      )
-        .headers({
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        })
-        .post({
-          sql: 'SELECT name FROM sqlite_master WHERE type="table"',
-          params: [],
-        })
-        .json<RunSQLResponse>(),
-    enabled: !!accountId && !!databaseId && !!token,
+    queryKey: ["tables", databaseId, dbType, localDb],
+    queryFn: async () => {
+      if (dbType === "cloudflare") {
+        const res = await wretch(
+          `/api/client/v4/accounts/${accountId}/d1/database/${databaseId}/raw`,
+        )
+          .headers({
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          })
+          .post({
+            sql: 'SELECT name FROM sqlite_master WHERE type="table"',
+            params: [],
+          })
+          .json<RunSQLResponse>();
+
+        if (res.result?.at(0)?.results.rows.length) {
+          const defaultTable = res.result
+            .at(0)
+            ?.results.rows.flat()
+            .find((i) => i !== "_cf_KV");
+          if (defaultTable) {
+            setRemoteTable(defaultTable as string);
+          }
+        }
+        return res;
+      }
+
+      await sleep(300);
+
+      try {
+        const res = localDb?.exec(
+          `SELECT name FROM sqlite_master WHERE type="table"`,
+        );
+
+        if (res?.at(0)?.values.length) {
+          setLocalTable(res.at(0)?.values.flat().at(0) as string);
+        }
+
+        return Promise.resolve({
+          success: true,
+          errors: [] as any[],
+          messages: [] as any[],
+          result: [
+            {
+              results: {
+                columns: res?.at(0)?.columns ?? [],
+                rows: res?.at(0)?.values ?? [],
+              },
+              success: true,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Error fetching tables from local SQLite:", error);
+        return Promise.resolve({
+          success: false,
+          errors: [error] as any[],
+          messages: ["Error fetching tables from local SQLite"] as any[],
+          result: [] as any[],
+        });
+      }
+    },
+    enabled: shouldFetchRemoteD1 || shouldFetchLocalSqlite,
   });
 
   const tables = useMemo(() => {
@@ -132,9 +222,12 @@ function App() {
       (tablesData?.result
         .at(0)
         ?.results.rows.flat()
-        .filter((i) => i !== "_cf_KV") as string[]) ?? []
+        .filter((i: any) => i !== "_cf_KV") as string[]) ?? []
     );
   }, [tablesData]);
+
+  const shouldFetchFetchRemoteData = shouldFetchRemoteD1 && !!remoteTable;
+  const shouldFetchFetchLocalData = shouldFetchLocalSqlite && !!localTable;
 
   const {
     data: selectResult,
@@ -143,26 +236,76 @@ function App() {
     error: errorRows,
     refetch: refetchRows,
   } = useQuery({
-    queryKey: ["rows", databaseId, table, limit, page],
-    queryFn: () =>
-      wretch(
-        `/api/client/v4/accounts/${accountId}/d1/database/${databaseId}/raw`,
-      )
-        .headers({
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        })
-        .post({
-          sql: `SELECT * FROM ${table} LIMIT ? OFFSET ?`,
-          params: [limit, (page - 1) * limit],
-        })
-        .json<RunSQLResponse>(),
-    enabled: !!accountId && !!databaseId && !!token && !!table,
+    queryKey: [
+      "rows",
+      databaseId,
+      remoteTable,
+      localTable,
+      limit,
+      page,
+      dbType,
+      localDb,
+    ],
+    queryFn: async () => {
+      if (dbType === "cloudflare") {
+        return wretch(
+          `/api/client/v4/accounts/${accountId}/d1/database/${databaseId}/raw`,
+        )
+          .headers({
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          })
+          .post({
+            sql: `SELECT * FROM ${remoteTable} LIMIT ? OFFSET ?`,
+            params: [limit, (page - 1) * limit],
+          })
+          .json<RunSQLResponse>();
+      }
+
+      await sleep(300);
+
+      try {
+        const res = localDb?.exec(
+          `SELECT * FROM ${localTable} LIMIT ${limit} OFFSET ${(page - 1) * limit}`,
+        );
+
+        return Promise.resolve({
+          success: true,
+          errors: [] as any[],
+          messages: [] as any[],
+          result: [
+            {
+              results: {
+                columns: res?.at(0)?.columns ?? [],
+                rows: res?.at(0)?.values ?? [],
+              },
+              success: true,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Error fetching data from local SQLite:", error);
+        return Promise.resolve({
+          success: false,
+          errors: [error] as any[],
+          messages: ["Error fetching data from local SQLite"] as any[],
+          result: [
+            {
+              results: {
+                columns: [],
+                rows: [],
+              },
+              success: false,
+            },
+          ],
+        });
+      }
+    },
+    enabled: shouldFetchFetchRemoteData || shouldFetchFetchLocalData,
   });
 
   const tableData = useMemo(() => {
     // return generateMockTableData(20, 100); // 20 columns, 100 rows
-
     const columns = selectResult?.result.at(0)?.results.columns;
     const rows = selectResult?.result.at(0)?.results.rows;
 
@@ -172,23 +315,32 @@ function App() {
     };
   }, [selectResult]);
 
-  useEffect(() => {
-    if (accounts?.result.length && !accountId) {
-      setAccountId(accounts.result[0].id);
+  const handleOpenLocalSQLiteFile = useMemoizedFn(async () => {
+    try {
+      const [fileHandle] = await window.showOpenFilePicker({
+        types: [
+          {
+            description: "SQLite Database",
+            accept: { "application/x-sqlite3": [".sqlite", ".db"] },
+          },
+        ],
+      });
+      setLoadingLocalDb(true);
+      const file = await fileHandle.getFile();
+      setLocalDbFile(file);
+      const arrayBuffer = await file.arrayBuffer();
+      const SQL = await initSqlJs({
+        locateFile: (file) => `/${file}`,
+      });
+      const db = new SQL.Database(new Uint8Array(arrayBuffer));
+      setLocalDb(db);
+      setOpened(false);
+    } catch (error) {
+      console.error("Error opening SQLite file: ", error);
+    } finally {
+      setLoadingLocalDb(false);
     }
-  }, [accounts, accountId]);
-
-  useEffect(() => {
-    if (databases?.result.length && !databaseId) {
-      setDatabaseId(databases.result[0].uuid);
-    }
-  }, [databases, databaseId]);
-
-  useEffect(() => {
-    if (tables?.length && !table) {
-      setTable(tables.at(0)!);
-    }
-  }, [tables, table]);
+  });
 
   useEffect(() => {
     const error = errorAccounts || errorDatabases || errorRows || errorTables;
@@ -217,47 +369,85 @@ function App() {
                 <IconLayoutSidebarLeftExpand size={16} />
               )}
             </ActionIcon>
-            <Select
-              placeholder="Account"
+
+            <SegmentedControl
+              data={[
+                { label: "Cloudflare D1", value: "cloudflare" },
+                { label: "Local SQLite", value: "local" },
+              ]}
+              value={dbType}
+              onChange={(value) => setDbType(value as "cloudflare" | "local")}
               size="xs"
-              data={accounts?.result.map((account) => ({
-                value: account.id,
-                label: account.name,
-              }))}
-              value={accountId}
-              onChange={(value) => value && setAccountId(value)}
-              withCheckIcon={false}
-              rightSection={
-                isLoadingAccounts ? (
-                  <Loader size={12} />
-                ) : errorAccounts ? (
-                  <IconAlertCircle />
-                ) : null
-              }
             />
-            <Select
-              placeholder="Database"
-              size="xs"
-              data={databases?.result.map((db) => ({
-                value: db.uuid,
-                label: db.name,
-              }))}
-              value={databaseId}
-              onChange={(value) => {
-                if (value) {
-                  setDatabaseId(value);
-                  setTable("");
-                }
-              }}
-              withCheckIcon={false}
-              rightSection={
-                isLoadingAccounts || isLoadingDatabases ? (
-                  <Loader size={12} />
-                ) : errorDatabases ? (
-                  <IconAlertCircle />
-                ) : null
-              }
-            />
+
+            {dbType === "cloudflare" && (
+              <>
+                <Select
+                  placeholder="Account"
+                  size="xs"
+                  data={accounts?.result.map((account) => ({
+                    value: account.id,
+                    label: account.name,
+                  }))}
+                  value={accountId}
+                  onChange={(value) => value && setAccountId(value)}
+                  withCheckIcon={false}
+                  rightSection={
+                    isLoadingAccounts ? (
+                      <Loader size={12} />
+                    ) : errorAccounts ? (
+                      <IconAlertCircle />
+                    ) : null
+                  }
+                />
+                <Select
+                  placeholder="Database"
+                  size="xs"
+                  data={databases?.result.map((db) => ({
+                    value: db.uuid,
+                    label: db.name,
+                  }))}
+                  value={databaseId}
+                  onChange={(value) => {
+                    if (value) {
+                      setDatabaseId(value);
+                      setRemoteTable("");
+                    }
+                  }}
+                  withCheckIcon={false}
+                  rightSection={
+                    isLoadingAccounts || isLoadingDatabases ? (
+                      <Loader size={12} />
+                    ) : errorDatabases ? (
+                      <IconAlertCircle />
+                    ) : null
+                  }
+                />
+              </>
+            )}
+            {dbType === "local" &&
+              (localDbFile ? (
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  onClick={handleOpenLocalSQLiteFile}
+                  leftSection={<IconFile size={16} />}
+                  loading={loadingLocalDb}
+                >
+                  {`${localDbFile.name} (${prettyBytes(localDbFile.size, { space: false, maximumFractionDigits: 1 })})`}
+                </Button>
+              ) : (
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  onClick={handleOpenLocalSQLiteFile}
+                  leftSection={<IconFile size={16} />}
+                  loading={loadingLocalDb}
+                >
+                  No file selected
+                </Button>
+              ))}
+
             <ActionIcon
               variant="subtle"
               title="Clear Token"
@@ -322,9 +512,17 @@ function App() {
             <NavLink
               key={i}
               label={i}
-              active={i === table}
+              active={
+                dbType === "cloudflare" ? i === remoteTable : i === localTable
+              }
               color="blue"
-              onClick={() => setTable(i)}
+              onClick={() => {
+                if (dbType === "cloudflare") {
+                  setRemoteTable(i);
+                } else {
+                  setLocalTable(i);
+                }
+              }}
             />
           ))
         ) : (
@@ -385,7 +583,7 @@ function App() {
       <Modal
         opened={opened}
         centered
-        title={<Text fw={700}>Connect to Cloudflare</Text>}
+        title={<Text fw={700}>Connect to Database</Text>}
         onClose={() => setOpened(false)}
         size="lg"
       >
@@ -416,7 +614,7 @@ function App() {
           <Alert
             color="blue"
             mt={8}
-            title="Note"
+            title="Why do I need an API token?"
             icon={<IconAlertCircle size={16} />}
           >
             <Text size="xs" c="blue">
@@ -436,6 +634,17 @@ function App() {
               </Anchor>{" "}
               and run it locally or host it on your own Cloudflare Pages
               instance.
+            </Text>
+          </Alert>
+
+          <Alert
+            color="blue"
+            title="Local SQLite"
+            icon={<IconAlertCircle size={16} />}
+          >
+            <Text size="xs" c="blue">
+              If you are using local SQLite, all operations are performed purely
+              in your browser. No data will be sent to the server.
             </Text>
           </Alert>
 

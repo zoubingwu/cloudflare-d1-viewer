@@ -76,7 +76,7 @@ export interface RunSQLResponse {
 export interface RunSQLResult {
   results: RunSQLResultResults;
   success: boolean;
-  meta: RunSQLResultMeta;
+  meta?: RunSQLResultMeta;
 }
 
 export interface RunSQLResultMeta {
