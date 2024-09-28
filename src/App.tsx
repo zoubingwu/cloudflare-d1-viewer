@@ -114,9 +114,9 @@ function App() {
     enabled: !!accountId && !!token && dbType === "cloudflare",
   });
 
-  const shouldFetchRemoteD1 =
+  const shouldFetchRemoteTables =
     !!accountId && !!databaseId && !!token && dbType === "cloudflare";
-  const shouldFetchLocalSqlite = !!localDb && dbType === "local";
+  const shouldFetchLocalTables = !!localDb && dbType === "local";
 
   const {
     data: tablesData,
@@ -186,7 +186,7 @@ function App() {
         });
       }
     },
-    enabled: shouldFetchRemoteD1 || shouldFetchLocalSqlite,
+    enabled: shouldFetchRemoteTables || shouldFetchLocalTables,
   });
 
   const tables = useMemo(() => {
@@ -198,8 +198,8 @@ function App() {
     );
   }, [tablesData]);
 
-  const shouldFetchFetchRemoteData = shouldFetchRemoteD1 && !!remoteTable;
-  const shouldFetchFetchLocalData = shouldFetchLocalSqlite && !!localTable;
+  const shouldFetchFetchRemoteData = shouldFetchRemoteTables && !!remoteTable;
+  const shouldFetchFetchLocalData = shouldFetchLocalTables && !!localTable;
 
   const {
     data: selectResult,
@@ -276,7 +276,7 @@ function App() {
     enabled: shouldFetchFetchRemoteData || shouldFetchFetchLocalData,
   });
 
-  const tableData = useMemo(() => {
+  const data = useMemo(() => {
     // return generateMockTableData(20, 100); // 20 columns, 100 rows
     const columns = selectResult?.result.at(0)?.results.columns;
     const rows = selectResult?.result.at(0)?.results.rows;
@@ -519,17 +519,17 @@ function App() {
           </Stack>
         ) : (
           <Table.ScrollContainer minWidth="100%">
-            {tableData.head.length > 0 && tableData.body.length > 0 ? (
+            {data.head.length > 0 && data.body.length > 0 ? (
               <Table striped highlightOnHover withRowBorders={false}>
                 <Table.Thead>
                   <Table.Tr>
-                    {tableData.head.map((i) => (
+                    {data.head.map((i) => (
                       <Table.Th key={i}>{i}</Table.Th>
                     ))}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {tableData.body.map((i, index) => (
+                  {data.body.map((i, index) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
                     <Table.Tr key={index}>
                       {i.map((j) => (
