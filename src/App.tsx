@@ -411,36 +411,14 @@ function App() {
                   : "Open SQLite File"}
               </Button>
             )}
-
-            <ActionIcon
-              variant="subtle"
-              title="Clear Token"
-              onClick={() => {
-                setOpened(true);
-              }}
-            >
-              <IconSettings size={16} />
-            </ActionIcon>
           </Group>
 
           <Group>
-            <ActionIcon
-              variant="subtle"
-              title="Refresh"
-              onClick={() => refetchRows()}
-            >
-              {isRefetchingRows ? (
-                <Loader size={12} />
-              ) : (
-                <IconRefresh size={16} />
-              )}
-            </ActionIcon>
-
             <Select
               placeholder="Limit"
               title="Limit"
               size="xs"
-              w={60}
+              w={100}
               data={[
                 { value: "10", label: "10" },
                 { value: "25", label: "25" },
@@ -457,11 +435,33 @@ function App() {
               placeholder="Page"
               title="Page"
               size="xs"
-              w={50}
+              w={100}
               min={1}
               value={page}
               onChange={(value) => value && setPage(Number(value))}
             />
+
+            <ActionIcon
+              variant="subtle"
+              title="Refresh"
+              onClick={() => refetchRows()}
+            >
+              {isRefetchingRows ? (
+                <Loader size={12} />
+              ) : (
+                <IconRefresh size={16} />
+              )}
+            </ActionIcon>
+
+            <ActionIcon
+              variant="subtle"
+              title="Clear Token"
+              onClick={() => {
+                setOpened(true);
+              }}
+            >
+              <IconSettings size={16} />
+            </ActionIcon>
 
             <ActionIcon
               variant="subtle"
