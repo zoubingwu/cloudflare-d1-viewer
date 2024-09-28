@@ -21,6 +21,7 @@ import {
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
   IconAlertCircle,
+  IconBrandGithub,
   IconExternalLink,
   IconFile,
   IconLayoutSidebarLeftCollapse,
@@ -355,7 +356,6 @@ function App() {
             {dbType === "cloudflare" && (
               <>
                 <Select
-                  placeholder="Account"
                   size="xs"
                   data={accounts?.result.map((account) => ({
                     value: account.id,
@@ -424,6 +424,18 @@ function App() {
           </Group>
 
           <Group>
+            <ActionIcon
+              variant="subtle"
+              title="Refresh"
+              onClick={() => refetchRows()}
+            >
+              {isRefetchingRows ? (
+                <Loader size={12} />
+              ) : (
+                <IconRefresh size={16} />
+              )}
+            </ActionIcon>
+
             <Select
               placeholder="Limit"
               title="Limit"
@@ -451,12 +463,17 @@ function App() {
               onChange={(value) => value && setPage(Number(value))}
             />
 
-            <ActionIcon variant="subtle" onClick={() => refetchRows()}>
-              {isRefetchingRows ? (
-                <Loader size={12} />
-              ) : (
-                <IconRefresh size={16} />
-              )}
+            <ActionIcon
+              variant="subtle"
+              title="Github"
+              onClick={() => {
+                window.open(
+                  "https://github.com/zoubingwu/cloudflare-d1-viewer",
+                  "_blank",
+                );
+              }}
+            >
+              <IconBrandGithub size={16} />
             </ActionIcon>
           </Group>
         </Group>
