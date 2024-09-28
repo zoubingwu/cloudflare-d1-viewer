@@ -22,6 +22,7 @@ import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
   IconAlertCircle,
   IconBrandGithub,
+  IconDatabaseExport,
   IconExternalLink,
   IconFile,
   IconLayoutSidebarLeftCollapse,
@@ -35,8 +36,17 @@ import prettyBytes from "pretty-bytes";
 import { useEffect, useMemo, useState } from "react";
 import initSqlJs, { Database } from "sql.js";
 import wretch from "wretch";
-import { GetUserResponse, ListDatabaseResponse, RunSQLResponse } from "./cf";
-import { generateCloudflareTokenLink, sleep } from "./helper";
+import {
+  ExportDatabaseResponse,
+  GetUserResponse,
+  ListDatabaseResponse,
+  RunSQLResponse,
+} from "./cf";
+import {
+  downloadFileFromUrl,
+  generateCloudflareTokenLink,
+  sleep,
+} from "./helper";
 
 function App() {
   const [navbarOpened, { toggle: toggleNavbar }] = useDisclosure(true);
@@ -277,6 +287,51 @@ function App() {
     enabled: shouldFetchFetchRemoteData || shouldFetchFetchLocalData,
   });
 
+  const [pollingState, setPollingState] = useState<{
+    bookmark: string;
+    status: "idle" | "active" | "completed" | "error";
+  }>({ bookmark: "", status: "idle" });
+
+  const { data: downloadData } = useQuery({
+    queryKey: ["download", databaseId, remoteTable, dbType],
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (
+        data?.result.status === "completed" ||
+        data?.result.status === "error"
+      ) {
+        return false;
+      }
+      return 1000;
+    },
+    queryFn: async () => {
+      if (dbType === "cloudflare") {
+        const res = await wretch(
+          `/api/client/v4/accounts/${accountId}/d1/database/${databaseId}/export`,
+        )
+          .headers({
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          })
+          .post({
+            current_bookmark: pollingState.bookmark,
+            no_data: false,
+            no_schema: false,
+            output_format: "polling",
+          })
+          .json<ExportDatabaseResponse>();
+
+        setPollingState({
+          bookmark: res.result.at_bookmark,
+          status: res.result.status,
+        });
+
+        return res;
+      }
+    },
+    enabled: shouldFetchFetchRemoteData && pollingState.status === "active",
+  });
+
   const data = useMemo(() => {
     // return generateMockTableData(20, 100); // 20 columns, 100 rows
     const columns = selectResult?.result.at(0)?.results.columns;
@@ -313,6 +368,10 @@ function App() {
     } finally {
       setLoadingLocalDb(false);
     }
+  });
+
+  const handleDownload = useMemoizedFn(async () => {
+    setPollingState({ bookmark: "", status: "active" });
   });
 
   useEffect(() => {
@@ -395,6 +454,33 @@ function App() {
                     ) : null
                   }
                 />
+
+                <ActionIcon
+                  variant="subtle"
+                  title="Export Table"
+                  onClick={handleDownload}
+                >
+                  {pollingState.status === "active" ? (
+                    <Loader size={12} />
+                  ) : (
+                    <IconDatabaseExport size={16} />
+                  )}
+                </ActionIcon>
+
+                {downloadData?.result.result && (
+                  <Anchor
+                    size="xs"
+                    c="blue"
+                    onClick={() => {
+                      downloadFileFromUrl(
+                        downloadData?.result.result.signed_url,
+                        downloadData?.result.result.filename,
+                      );
+                    }}
+                  >
+                    Click here to download
+                  </Anchor>
+                )}
               </>
             )}
             {dbType === "local" && (

@@ -94,3 +94,21 @@ export interface RunSQLResultResults {
   columns: string[];
   rows: Array<any[]>;
 }
+
+export interface ExportDatabaseResponse {
+  errors: any[];
+  messages: any[];
+  result: {
+    at_bookmark: string;
+    error: string;
+    messages: string[];
+    result: {
+      filename: string;
+      signed_url: string;
+    };
+    status: "active" | "completed" | "error";
+    success: boolean;
+    type: string;
+  };
+  success: boolean;
+}

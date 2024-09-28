@@ -26,3 +26,27 @@ export function generateCloudflareTokenLink(name: string): string {
   const permissionGroupKeys = encodeURIComponent(JSON.stringify(permissions));
   return `https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=${permissionGroupKeys}&name=${encodeURIComponent(name)}`;
 }
+
+export async function downloadFileFromUrl(url: string, fileName: string) {
+  try {
+    const proxyUrl = `/api/download?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+
+    if (!response.ok) throw new Error("Network response was not ok");
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    alert(`Download failed: ${error}`);
+  }
+}
