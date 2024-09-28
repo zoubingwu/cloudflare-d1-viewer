@@ -5,6 +5,7 @@ Cloudflare D1 Viewer is a simple web app that allows you to interact with your C
 ## Features
 
 - Connect to your Cloudflare account using an API token
+- View your local SQLite databases purely in browser
 - Select and view databases associated with your account
 - Browse tables within selected databases
 - Paginate through large result sets
@@ -62,6 +63,8 @@ pnpm deploy
 ## Security Note
 
 The application stores your API token in your browser's local storage for convenience. If you're uncomfortable with this, you can clone the project and host it on your own Cloudflare Pages instance.
+
+You don't need API token to view local SQLite databases and all operations are performed locally in your browser.
 
 ## Contributing
 
