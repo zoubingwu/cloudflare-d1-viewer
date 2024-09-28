@@ -521,9 +521,8 @@ function App() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {data.body.map((i, index) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                    <Table.Tr key={index}>
+                  {data.body.map((i) => (
+                    <Table.Tr key={i.join(",")}>
                       {i.map((j) => (
                         <Table.Td key={j}>
                           <ScrollArea.Autosize mah={100}>
