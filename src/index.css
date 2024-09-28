@@ -12,3 +12,12 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+table {
+  min-width: 100%;
+}
+
+table thead tr th,
+table tbody tr td {
+  min-width: 200px;
+}

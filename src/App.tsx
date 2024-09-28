@@ -10,6 +10,7 @@ import {
   NavLink,
   NumberInput,
   PasswordInput,
+  ScrollArea,
   Select,
   Skeleton,
   Stack,
@@ -35,6 +36,24 @@ const permissions = [{ key: "d1", type: "edit" }];
 function generateCloudflareTokenLink(name: string): string {
   const permissionGroupKeys = encodeURIComponent(JSON.stringify(permissions));
   return `https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=${permissionGroupKeys}&name=${encodeURIComponent(name)}`;
+}
+
+function generateMockTableData(columnCount: number, rowCount: number) {
+  const lorem =
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+  const head = Array.from({ length: columnCount }, (_, i) => `Column ${i + 1}`);
+
+  const body = Array.from({ length: rowCount }, (_, rowIndex) =>
+    Array.from({ length: columnCount }, (_, colIndex) => {
+      if (colIndex === 0) return `Row ${rowIndex + 1}`;
+      if (colIndex === 1) return rowIndex * 1000000;
+      if (colIndex === 2) return new Date(2024, 0, rowIndex + 1).toISOString();
+      return lorem.slice(0, Math.random() * lorem.length + 50);
+    }),
+  );
+
+  return { head, body };
 }
 
 function App() {
@@ -142,13 +161,14 @@ function App() {
   });
 
   const tableData = useMemo(() => {
+    // return generateMockTableData(20, 100); // 20 columns, 100 rows
+
     const columns = selectResult?.result.at(0)?.results.columns;
     const rows = selectResult?.result.at(0)?.results.rows;
 
     return {
       head: columns ?? [],
       body: rows ?? [],
-      caption: rows && rows.length === 0 ? "No data" : undefined,
     };
   }, [selectResult]);
 
@@ -330,12 +350,29 @@ function App() {
         ) : (
           <Table.ScrollContainer minWidth="100%">
             {tableData.head.length > 0 && tableData.body.length > 0 ? (
-              <Table
-                striped
-                highlightOnHover
-                withRowBorders={false}
-                data={tableData}
-              />
+              <Table striped highlightOnHover withRowBorders={false}>
+                <Table.Thead>
+                  <Table.Tr>
+                    {tableData.head.map((i) => (
+                      <Table.Th key={i}>{i}</Table.Th>
+                    ))}
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {tableData.body.map((i, index) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                    <Table.Tr key={index}>
+                      {i.map((j) => (
+                        <Table.Td key={j}>
+                          <ScrollArea.Autosize mah={100}>
+                            {j.toString()}
+                          </ScrollArea.Autosize>
+                        </Table.Td>
+                      ))}
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
             ) : (
               <Text c="dimmed" size="xs" p={8}>
                 No data found
