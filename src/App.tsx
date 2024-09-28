@@ -628,18 +628,30 @@ function App() {
             </Text>
           </Alert>
 
-          <Group justify="flex-end">
-            <Button
-              variant="outline"
-              size="xs"
-              mt={16}
-              onClick={() => {
-                removeToken();
-                window.location.reload();
-              }}
-            >
-              Remove token from local storage
-            </Button>
+          <Group justify="flex-end" mt={16}>
+            {value ? (
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => {
+                  setDbType("local");
+                  setOpened(false);
+                }}
+              >
+                Skip and use local SQLite
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => {
+                  removeToken();
+                  window.location.reload();
+                }}
+              >
+                Remove token from local storage
+              </Button>
+            )}
 
             <Button
               size="xs"
