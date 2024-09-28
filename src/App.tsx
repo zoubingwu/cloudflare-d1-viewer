@@ -310,6 +310,7 @@ function App() {
       setOpened(false);
     } catch (error) {
       console.error("Error opening SQLite file: ", error);
+      alert("Error opening SQLite file: " + error);
     } finally {
       setLoadingLocalDb(false);
     }
