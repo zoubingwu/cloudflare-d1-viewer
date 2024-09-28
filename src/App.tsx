@@ -634,22 +634,22 @@ function App() {
                 variant="outline"
                 size="xs"
                 onClick={() => {
-                  setDbType("local");
-                  setOpened(false);
+                  removeToken();
+                  window.location.reload();
                 }}
               >
-                Skip and use local SQLite
+                Remove token from local storage
               </Button>
             ) : (
               <Button
                 variant="outline"
                 size="xs"
                 onClick={() => {
-                  removeToken();
-                  window.location.reload();
+                  setDbType("local");
+                  setOpened(false);
                 }}
               >
-                Remove token from local storage
+                Skip and use local SQLite
               </Button>
             )}
 
