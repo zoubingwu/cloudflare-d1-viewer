@@ -655,7 +655,6 @@ function App() {
 
             <Button
               size="xs"
-              mt={16}
               disabled={!value}
               onClick={() => {
                 setToken(value);
