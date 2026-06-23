@@ -544,7 +544,7 @@ function App() {
                       {i.map((j) => (
                         <Table.Td key={j}>
                           <ScrollArea.Autosize mah={100}>
-                            {j.toString()}
+                            {j == null ? "NULL" : j.toString()}
                           </ScrollArea.Autosize>
                         </Table.Td>
                       ))}
