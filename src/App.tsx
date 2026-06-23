@@ -61,6 +61,7 @@ function App() {
   const [localTable, setLocalTable] = useState<string>("");
   const [limit, setLimit] = useState<number>(50);
   const [page, setPage] = useState<number>(1);
+  const [showBaseDeckBanner, setShowBaseDeckBanner] = useState(true);
 
   const {
     data: accounts,
@@ -326,15 +327,76 @@ function App() {
 
   return (
     <AppShell
-      header={{ height: 48 }}
+      header={{ height: showBaseDeckBanner ? 82 : 48 }}
       navbar={{
         width: 200,
         breakpoint: "sm",
         collapsed: { mobile: !navbarOpened, desktop: !navbarOpened },
       }}
     >
-      <AppShell.Header py={8} px={16}>
-        <Group justify="space-between">
+      <AppShell.Header>
+        {showBaseDeckBanner && (
+          <Group
+            h={34}
+            px={16}
+            justify="center"
+            gap="xs"
+            wrap="nowrap"
+            role="link"
+            tabIndex={0}
+            aria-label="Open BaseDeck website"
+            title="Open BaseDeck website"
+            onClick={() =>
+              window.open(
+                "https://basedeck.app/",
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+            onKeyDown={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                (event.key === "Enter" || event.key === " ")
+              ) {
+                event.preventDefault();
+                window.open(
+                  "https://basedeck.app/",
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }
+            }}
+            style={{
+              background: "var(--mantine-color-blue-0)",
+              borderBottom: "1px solid var(--mantine-color-blue-2)",
+              color: "var(--mantine-color-blue-9)",
+              cursor: "pointer",
+              position: "relative",
+            }}
+          >
+            <Text size="sm" fw={600} truncate>
+              Try BaseDeck — secure AI-native database workspace for D1, SQLite,
+              Postgres, and more.
+            </Text>
+            <IconExternalLink size={14} />
+            <ActionIcon
+              size="sm"
+              variant="subtle"
+              c="blue.8"
+              aria-label="Hide BaseDeck banner"
+              title="Hide BaseDeck banner"
+              style={{ position: "absolute", right: 16 }}
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowBaseDeckBanner(false);
+              }}
+            >
+              ×
+            </ActionIcon>
+          </Group>
+        )}
+
+        <Group h={48} px={16} justify="space-between">
           <Group>
             <ActionIcon variant="subtle" onClick={() => toggleNavbar()}>
               {navbarOpened ? (
